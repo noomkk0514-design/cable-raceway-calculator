@@ -1,0 +1,697 @@
+<title>Cable &amp; Raceway Calculator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bai+Jamjuree:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: dark header strip + sticky tab bar; each tool is inputs (left) | results (right), stacking on phones */
+:root{
+  --bg:#EEF1F4; --surface:#FFFFFF; --field:#F8F9FB; --ink:#17212B; --muted:#5A6774; --line:#D3DAE1;
+  --head:#18232D; --head-ink:#E9EEF2; --head-muted:#9AA8B5;
+  --accent:#B4542A; --accent-soft:#F6E6DD; --on-accent:#FFFFFF;
+  --ok:#1E7A4A; --ok-soft:#DDF1E5; --bad:#B3261E; --bad-soft:#F8E0DE; --warn:#946200; --warn-soft:#F7EDD2;
+  --f-display:"Bai Jamjuree","IBM Plex Sans Thai",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Thai",system-ui,"Segoe UI",Tahoma,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11161B; --surface:#192129; --field:#141B21; --ink:#E4E9EE; --muted:#93A1AE; --line:#2B3640;
+  --head:#0B0F13; --head-ink:#E4E9EE; --head-muted:#8494A3;
+  --accent:#E2804F; --accent-soft:#3A2519; --on-accent:#1A0E07;
+  --ok:#5CC98C; --ok-soft:#173326; --bad:#F2867E; --bad-soft:#3B1C1A; --warn:#E4B84F; --warn-soft:#352A11;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11161B; --surface:#192129; --field:#141B21; --ink:#E4E9EE; --muted:#93A1AE; --line:#2B3640;
+  --head:#0B0F13; --head-ink:#E4E9EE; --head-muted:#8494A3;
+  --accent:#E2804F; --accent-soft:#3A2519; --on-accent:#1A0E07;
+  --ok:#5CC98C; --ok-soft:#173326; --bad:#F2867E; --bad-soft:#3B1C1A; --warn:#E4B84F; --warn-soft:#352A11;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--head)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.25}
+.num,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+header.top{background:var(--head);color:var(--head-ink)}
+header.top .wrap{display:flex;align-items:center;gap:14px;padding-block:18px}
+header.top h1{font-size:22px;font-weight:700;letter-spacing:.01em}
+header.top p{margin:2px 0 0;color:var(--head-muted);font-size:13px}
+.mark{flex:none;width:44px;height:44px}
+
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+nav.tabs .wrap{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+nav.tabs button{font:inherit;font-weight:500;background:none;border:0;color:var(--muted);padding:12px 14px;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+nav.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
+
+main{padding-block:22px 40px}
+.intro{color:var(--muted);margin:0 0 16px;max-width:75ch;font-size:14px}
+.grid{display:grid;grid-template-columns:minmax(0,370px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:880px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px;min-width:0}
+.panel h2{font-size:17px;font-weight:600;margin-bottom:14px}
+.panel h3{font-size:15px;font-weight:600;margin:4px 0 10px}
+.stack{display:flex;flex-direction:column;gap:20px;min-width:0}
+.form{display:flex;flex-direction:column;gap:12px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label,.lbl{font-size:13px;color:var(--muted);font-weight:500}
+.hint{font-size:12px;color:var(--muted)}
+input[type=number],input[type=text],select{width:100%;font:inherit;font-size:15px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--field);color:var(--ink);min-width:0}
+input[type=number]{font-family:var(--f-mono)}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:14px}
+.check input{margin-top:4px;accent-color:var(--accent)}
+.seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:var(--field)}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{flex:1;text-align:center;padding:7px 6px;cursor:pointer;font-size:14px;color:var(--ink)}
+.seg input:checked+label{background:var(--accent);color:var(--on-accent);font-weight:600}
+.seg input:focus-visible+label{outline:2px solid var(--accent);outline-offset:-3px}
+hr.sep{border:0;border-top:1px solid var(--line);margin:4px 0}
+
+.answer{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.answer>div{background:var(--surface);padding:12px 14px;min-width:0}
+.answer .k{font-size:12.5px;color:var(--muted)}
+.answer .v{font-family:var(--f-mono);font-size:22px;font-weight:600;line-height:1.3;font-variant-numeric:tabular-nums}
+.answer .v small{font-size:13px;font-weight:500;color:var(--muted)}
+.answer .main{background:var(--accent-soft)}
+.answer .main .v{color:var(--accent)}
+.answer .sub{font-size:12.5px;color:var(--muted);margin-top:2px}
+
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip.warn{background:var(--warn-soft);color:var(--warn)}
+.notice{border-radius:8px;padding:10px 12px;font-size:14px}
+.notice.bad{background:var(--bad-soft);color:var(--bad)}
+.notice.warn{background:var(--warn-soft);color:var(--warn)}
+
+dl.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:0;font-size:14px}
+dl.kv dt{color:var(--muted)}
+dl.kv dd{margin:0;font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right}
+
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-weight:600;color:var(--muted);background:var(--field);font-size:12.5px;position:sticky;top:0}
+th:first-child,td:first-child{text-align:left}
+td{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:0}
+tr.pick td{background:var(--accent-soft);font-weight:600}
+td.dim{color:var(--muted)}
+
+.meter{position:relative;height:12px;background:var(--field);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.meter i{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:6px 0 0 6px}
+.meter b{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink)}
+.meter-lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:4px;font-family:var(--f-mono)}
+
+.cl{display:flex;flex-direction:column;gap:8px}
+.cl-row{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) 64px 34px;gap:6px;align-items:end}
+.cl-row .od{grid-column:1/-1}
+.btn{font:inherit;font-size:14px;font-weight:500;border:1px solid var(--line);background:var(--field);color:var(--ink);border-radius:6px;padding:7px 12px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.icon{padding:7px 0;width:34px;color:var(--muted)}
+.btn.add{align-self:flex-start;color:var(--accent);border-style:dashed}
+
+footer{border-top:1px solid var(--line);color:var(--muted);font-size:12.5px}
+footer .wrap{padding-block:18px 28px;max-width:1180px}
+footer p{margin:0 0 6px;max-width:100ch}
+@media (max-width:480px){.row2{grid-template-columns:1fr}.answer .v{font-size:19px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <svg class="mark" viewBox="0 0 44 44" aria-hidden="true">
+      <circle cx="22" cy="22" r="20" fill="none" stroke="#9AA8B5" stroke-width="2.5"/>
+      <circle cx="15.5" cy="17" r="6" fill="#B4542A"/><circle cx="28.5" cy="17" r="6" fill="#B4542A"/>
+      <circle cx="22" cy="28.5" r="6" fill="#B4542A"/>
+      <circle cx="15.5" cy="17" r="3" fill="#E9A57F"/><circle cx="28.5" cy="17" r="3" fill="#E9A57F"/><circle cx="22" cy="28.5" r="3" fill="#E9A57F"/>
+    </svg>
+    <div>
+      <h1>Cable &amp; Raceway Calculator</h1>
+      <p>เลือกขนาดสายไฟ · แรงดันตก · ท่อร้อยสาย · รางเดินสาย/รางเคเบิล · สายดิน</p>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="เครื่องมือ">
+  <div class="wrap" role="tablist">
+    <button role="tab" id="tab-sizing" data-tab="sizing" aria-selected="true">ออกแบบวงจร</button>
+    <button role="tab" id="tab-vd" data-tab="vd" aria-selected="false">แรงดันตก</button>
+    <button role="tab" id="tab-conduit" data-tab="conduit" aria-selected="false">ท่อร้อยสาย</button>
+    <button role="tab" id="tab-raceway" data-tab="raceway" aria-selected="false">รางเดินสาย / รางเคเบิล</button>
+    <button role="tab" id="tab-tables" data-tab="tables" aria-selected="false">ตารางอ้างอิง</button>
+  </div>
+</nav>
+
+<main class="wrap">
+
+<!-- ============ 1. CIRCUIT SIZING ============ -->
+<section id="p-sizing" role="tabpanel" aria-labelledby="tab-sizing">
+  <p class="intro">ใส่ข้อมูลโหลด ระบบจะเลือกเบรกเกอร์ ขนาดสายเฟสที่ผ่านทั้งพิกัดกระแส (หลังคูณตัวคูณปรับค่า) และแรงดันตก พร้อมสายดินและขนาดท่อ ค่าเริ่มต้นเป็นตัวอย่างโหลด 45 kW</p>
+  <div class="grid">
+    <form class="panel form" id="f-sz" onsubmit="return false">
+      <h2>ข้อมูลวงจร</h2>
+      <div class="field"><span class="lbl">ระบบไฟฟ้า</span>
+        <div class="seg">
+          <input type="radio" name="sz-ph" id="sz-ph1" value="1"><label for="sz-ph1">1 เฟส 230 V</label>
+          <input type="radio" name="sz-ph" id="sz-ph3" value="3" checked><label for="sz-ph3">3 เฟส 400 V</label>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="sz-load">โหลด</label><input type="number" id="sz-load" value="45" min="0" step="any"></div>
+        <div class="field"><label for="sz-unit">หน่วย</label>
+          <select id="sz-unit"><option value="kW">kW</option><option value="kVA">kVA</option><option value="A">A</option></select></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="sz-pf">Power factor</label><input type="number" id="sz-pf" value="0.85" min="0.1" max="1" step="0.01"></div>
+        <div class="field"><label for="sz-len">ความยาวสาย (m)</label><input type="number" id="sz-len" value="60" min="0" step="any"></div>
+      </div>
+      <label class="check"><input type="checkbox" id="sz-cont" checked><span>โหลดต่อเนื่อง (≥ 3 ชม.) — เบรกเกอร์ ≥ 1.25 × I<sub>B</sub></span></label>
+      <div class="field"><label for="sz-cb">พิกัดเบรกเกอร์ (A)</label><select id="sz-cb"></select></div>
+      <hr class="sep">
+      <div class="field"><label for="sz-cable">ชนิดสาย</label><select id="sz-cable"></select></div>
+      <div class="field"><label for="sz-method">วิธีการติดตั้ง</label><select id="sz-method"></select></div>
+      <div class="row2">
+        <div class="field"><label for="sz-ta">อุณหภูมิโดยรอบ (°C)</label><input type="number" id="sz-ta" value="40" step="1"></div>
+        <div class="field"><label for="sz-grp">จำนวนวงจรรวมกัน</label><input type="number" id="sz-grp" value="1" min="1" max="40" step="1"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="sz-par">สายขนานต่อเฟส</label><input type="number" id="sz-par" value="1" min="1" max="12" step="1"></div>
+        <div class="field"><label for="sz-vdl">แรงดันตกที่ยอมให้ (%)</label><input type="number" id="sz-vdl" value="3" min="0.1" step="0.1"></div>
+      </div>
+      <div class="field"><label for="sz-cond">ชนิดท่อ (สำหรับแนะนำขนาดท่อ)</label><select id="sz-cond"></select></div>
+    </form>
+    <div class="stack" id="r-sz"></div>
+  </div>
+</section>
+
+<!-- ============ 2. VOLTAGE DROP ============ -->
+<section id="p-vd" role="tabpanel" aria-labelledby="tab-vd" hidden>
+  <p class="intro">คำนวณแรงดันตกจาก ΔV = k · I · L · (R cosφ + X sinφ) โดย k = 2 สำหรับ 1 เฟส และ √3 สำหรับ 3 เฟส ค่า R ปรับที่อุณหภูมิใช้งานของฉนวน (PVC 70 °C, XLPE 90 °C)</p>
+  <div class="grid">
+    <form class="panel form" onsubmit="return false">
+      <h2>ข้อมูล</h2>
+      <div class="field"><span class="lbl">ระบบไฟฟ้า</span>
+        <div class="seg">
+          <input type="radio" name="vd-ph" id="vd-ph1" value="1"><label for="vd-ph1">1 เฟส</label>
+          <input type="radio" name="vd-ph" id="vd-ph3" value="3" checked><label for="vd-ph3">3 เฟส</label>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="vd-v">แรงดัน (V)</label><input type="number" id="vd-v" value="400" min="1" step="any"></div>
+        <div class="field"><label for="vd-pf">Power factor</label><input type="number" id="vd-pf" value="0.85" min="0.1" max="1" step="0.01"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="vd-load">โหลด</label><input type="number" id="vd-load" value="120" min="0" step="any"></div>
+        <div class="field"><label for="vd-unit">หน่วย</label>
+          <select id="vd-unit"><option value="A">A</option><option value="kW">kW</option><option value="kVA">kVA</option></select></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="vd-len">ความยาว (m)</label><input type="number" id="vd-len" value="80" min="0" step="any"></div>
+        <div class="field"><label for="vd-size">ขนาดสาย (mm²)</label><select id="vd-size"></select></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="vd-ins">ฉนวน</label><select id="vd-ins"><option value="PVC">PVC (70 °C)</option><option value="XLPE">XLPE (90 °C)</option></select></div>
+        <div class="field"><label for="vd-par">สายขนานต่อเฟส</label><input type="number" id="vd-par" value="1" min="1" max="12" step="1"></div>
+      </div>
+      <div class="field"><label for="vd-lim">แรงดันตกที่ยอมให้ (%)</label><input type="number" id="vd-lim" value="3" min="0.1" step="0.1">
+        <span class="hint">แนวทาง วสท.: สายป้อน + สายวงจรย่อยรวมไม่เกิน 5 %</span></div>
+    </form>
+    <div class="stack" id="r-vd"></div>
+  </div>
+</section>
+
+<!-- ============ 3. CONDUIT FILL ============ -->
+<section id="p-conduit" role="tabpanel" aria-labelledby="tab-conduit" hidden>
+  <p class="intro">พื้นที่หน้าตัดสายรวมต้องไม่เกินร้อยละของพื้นที่ภายในท่อ: สาย 1 เส้น 53 %, 2 เส้น 31 %, 3 เส้นขึ้นไป 40 % เส้นผ่านศูนย์กลางสายเป็นค่าโดยประมาณ เลือก "กำหนดเอง" เพื่อใส่ค่าจากแคตตาล็อกผู้ผลิต</p>
+  <div class="grid">
+    <form class="panel form" onsubmit="return false">
+      <h2>สายในท่อ</h2>
+      <div class="cl" id="cl-conduit"></div>
+      <button type="button" class="btn add" data-add="cl-conduit">+ เพิ่มสาย</button>
+      <hr class="sep">
+      <div class="field"><label for="cd-type">ชนิดท่อ</label><select id="cd-type"></select></div>
+    </form>
+    <div class="stack" id="r-cd"></div>
+  </div>
+</section>
+
+<!-- ============ 4. WIREWAY / TRAY ============ -->
+<section id="p-raceway" role="tabpanel" aria-labelledby="tab-raceway" hidden>
+  <p class="intro">รางเดินสาย (Wireway): พื้นที่สายรวมไม่เกิน 20 % ของหน้าตัดราง · รางเคเบิล (Cable tray): สายขนาดเล็กกว่า 120 mm² คิดตามพื้นที่ (ค่าเริ่มต้น 40 % ของความกว้าง × ความลึก) สาย 120 mm² ขึ้นไปวางชั้นเดียว ผลรวมเส้นผ่านศูนย์กลางต้องไม่เกินความกว้างราง</p>
+  <div class="grid">
+    <form class="panel form" onsubmit="return false">
+      <h2>ราง</h2>
+      <div class="field"><span class="lbl">ประเภท</span>
+        <div class="seg">
+          <input type="radio" name="rw-kind" id="rw-k1" value="wireway" checked><label for="rw-k1">Wireway</label>
+          <input type="radio" name="rw-kind" id="rw-k2" value="tray"><label for="rw-k2">Cable tray</label>
+        </div>
+      </div>
+      <div class="row2" id="rw-tray-opts" hidden>
+        <div class="field"><label for="rw-depth">ความลึกราง (mm)</label>
+          <select id="rw-depth"><option>50</option><option selected>75</option><option>100</option><option>150</option></select></div>
+        <div class="field"><label for="rw-fill">พื้นที่ใช้ได้ (%)</label><input type="number" id="rw-fill" value="40" min="5" max="100" step="1"></div>
+      </div>
+      <div class="field"><label for="rw-spare">เผื่อขยายในอนาคต (%)</label><input type="number" id="rw-spare" value="20" min="0" max="200" step="5"></div>
+      <hr class="sep">
+      <h3>สายในราง</h3>
+      <div class="cl" id="cl-raceway"></div>
+      <button type="button" class="btn add" data-add="cl-raceway">+ เพิ่มสาย</button>
+    </form>
+    <div class="stack" id="r-rw"></div>
+  </div>
+</section>
+
+<!-- ============ 5. REFERENCE TABLES ============ -->
+<section id="p-tables" role="tabpanel" aria-labelledby="tab-tables" hidden>
+  <p class="intro">พิกัดกระแสสายทองแดงตามวิธีการติดตั้ง (อ้างอิง IEC 60364-5-52 ซึ่งมาตรฐาน วสท. 2001 ใช้เป็นฐาน) คูณตัวคูณอุณหภูมิตามค่าที่เลือกแล้ว วิธี D อ้างอิงอุณหภูมิดิน 20 °C</p>
+  <div class="stack">
+    <form class="panel" onsubmit="return false">
+      <div class="row2" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+        <div class="field"><label for="tb-ins">ฉนวน</label><select id="tb-ins"><option value="PVC">PVC 70 °C (THW, NYY)</option><option value="XLPE">XLPE 90 °C (CV)</option></select></div>
+        <div class="field"><label for="tb-ld">สายมีกระแส</label><select id="tb-ld"><option value="2">2 เส้น (1 เฟส)</option><option value="3" selected>3 เส้น (3 เฟส)</option></select></div>
+        <div class="field"><label for="tb-ta">อุณหภูมิโดยรอบ (°C)</label><input type="number" id="tb-ta" value="40" step="1"></div>
+      </div>
+    </form>
+    <div class="panel"><h2>พิกัดกระแส (A)</h2><div class="tbl" id="t-amp"></div><p class="hint" id="t-amp-note"></p></div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+      <div class="panel"><h2>ขนาดสายดินตามพิกัดเครื่องป้องกัน</h2><div class="tbl" id="t-gnd"></div></div>
+      <div class="panel"><h2>เส้นผ่านศูนย์กลางภายในท่อ (mm)</h2><div class="tbl" id="t-cd"></div></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>ค่าในตารางเป็นค่าอ้างอิงเพื่อการออกแบบเบื้องต้น ผู้ออกแบบต้องตรวจสอบกับมาตรฐานการติดตั้งทางไฟฟ้าสำหรับประเทศไทย (วสท.) ฉบับที่ใช้บังคับ และข้อมูลจากผู้ผลิตสายและท่อก่อนใช้งานจริง</p>
+    <p>การคำนวณทั้งหมดทำในเบราว์เซอร์ ไม่มีการส่งข้อมูลออกไปภายนอก</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+const $ = id => document.getElementById(id);
+const SZ = [1.5,2.5,4,6,10,16,25,35,50,70,95,120,150,185,240,300];
+
+/* Copper ampacity at base temperature (30 °C air / 20 °C ground), IEC 60364-5-52 B.52.2–B.52.5, B.52.10, B.52.12 */
+const AMP = {
+  PVC:{
+    2:{A1:[14.5,19.5,26,34,46,61,80,99,119,151,182,210,240,273,321,367],
+       B1:[17.5,24,32,41,57,76,101,125,151,192,232,269,300,341,400,458],
+       B2:[16.5,23,30,38,52,69,90,111,133,168,201,232,258,294,344,394],
+       C:[19.5,27,36,46,63,85,112,138,168,213,258,299,344,392,461,530],
+       E:[22,30,40,51,70,94,119,148,180,232,282,328,379,434,514,593],
+       D:[22,29,38,47,63,81,104,125,148,183,216,246,278,312,361,408]},
+    3:{A1:[13.5,18,24,31,42,56,73,89,108,136,164,188,216,245,286,328],
+       B1:[15.5,21,28,36,50,68,89,110,134,171,207,239,262,296,346,394],
+       B2:[15,20,27,34,46,62,80,99,118,149,179,206,225,255,297,339],
+       C:[17.5,24,32,41,57,76,96,119,144,184,223,259,299,341,403,464],
+       E:[18.5,25,34,43,60,80,101,126,153,196,238,276,319,364,430,497],
+       D:[18,24,30,38,50,64,82,98,116,143,169,192,217,243,280,316]}},
+  XLPE:{
+    2:{A1:[19,26,35,45,61,81,106,131,158,200,241,278,318,362,424,486],
+       B1:[23,31,42,54,75,100,133,164,198,253,306,354,393,449,528,603],
+       B2:[22,30,40,51,69,91,119,146,175,221,265,305,334,384,459,532],
+       C:[24,33,45,58,80,107,138,171,209,269,328,382,441,506,599,693],
+       E:[26,36,49,63,86,115,149,185,225,289,352,410,473,542,641,741],
+       D:[25,33,42,52,68,89,113,136,159,197,232,263,296,332,382,431]},
+    3:{A1:[17,23,31,40,54,73,95,117,141,179,216,249,285,324,380,435],
+       B1:[20,28,37,48,66,88,117,144,175,222,269,312,342,384,450,514],
+       B2:[19.5,26,35,44,60,80,105,128,154,194,233,268,300,340,398,455],
+       C:[22,30,40,52,71,96,119,147,179,229,278,322,371,424,500,576],
+       E:[23,32,42,54,75,100,127,158,192,246,298,346,399,456,538,621],
+       D:[21,28,36,44,58,75,96,115,135,167,197,223,251,281,324,365]}}
+};
+const METHODS = {
+  A1:{th:"A1 · สายแกนเดียวในท่อ ในผนังฉนวนความร้อน", base:30, grp:"bunch", conduit:"single"},
+  B1:{th:"B1 · สายแกนเดียวในท่อ เดินบนผนัง/ฝังในคอนกรีต", base:30, grp:"bunch", conduit:"single"},
+  B2:{th:"B2 · สายหลายแกนในท่อ เดินบนผนัง", base:30, grp:"bunch", conduit:"multi"},
+  C:{th:"C · สายหลายแกน เดินตีกิ๊บบนผนัง/เพดาน", base:30, grp:"surface", conduit:null},
+  E:{th:"E · สายหลายแกน บนรางเคเบิลแบบมีรู/บันได", base:30, grp:"tray", conduit:null},
+  D:{th:"D · สายในท่อฝังดิน", base:20, grp:"duct", conduit:"single"}
+};
+const GROUP = {
+  bunch:[1,.80,.70,.65,.60,.57,.54,.52,.50],
+  surface:[1,.85,.79,.75,.73,.72,.72,.71,.70],
+  tray:[1,.88,.82,.77,.75,.73,.73,.72,.72],
+  duct:[1,.85,.75,.70,.65,.60,.57,.54,.52]
+};
+/* Conductor resistance at 20 °C (IEC 60228 class 2, Cu) and typical reactance, Ω/km */
+const R20 = [12.1,7.41,4.61,3.08,1.83,1.15,0.727,0.524,0.387,0.268,0.193,0.153,0.124,0.0991,0.0754,0.0601];
+const XL  = [0.115,0.11,0.107,0.1,0.094,0.09,0.086,0.083,0.083,0.082,0.082,0.08,0.08,0.08,0.079,0.079];
+
+/* Approximate overall diameters, mm */
+const OD = {
+  THW:  {name:"60227 IEC 01 (THW) 1 แกน", d:[3.3,3.9,4.4,4.9,6.4,7.4,9.2,10.4,12.1,14.0,16.0,17.7,19.6,21.9,25.1,27.9]},
+  CV1:  {name:"CV (XLPE) 1 แกน", d:[5.6,6.0,6.6,7.2,8.2,9.2,11.0,12.0,13.6,15.4,17.6,19.2,21.2,23.6,26.6,29.4]},
+  NYY1: {name:"NYY 1 แกน", d:[7.4,8.0,8.6,9.2,10.2,11.2,13.0,14.0,15.5,17.5,19.5,21.5,23.5,26.0,29.0,32.0]},
+  CV4:  {name:"CV (XLPE) 4 แกน", d:[12.0,13.0,14.5,16.0,18.0,20.0,24.0,26.5,30.0,34.0,39.0,43.0,47.0,52.0,58.0,64.0]},
+  NYY4: {name:"NYY 4 แกน", d:[13.0,14.0,15.5,17.0,19.5,22.0,26.0,29.0,33.0,37.0,42.0,46.0,51.0,56.0,63.0,70.0]},
+  CUSTOM:{name:"กำหนดเอง (ใส่ OD)", d:null}
+};
+const CABLES = {
+  THW:{name:"60227 IEC 01 (THW) 450/750 V", ins:"PVC", methods:["A1","B1"], od1:"THW", od4:null},
+  NYY:{name:"NYY 0.6/1 kV (PVC)", ins:"PVC", methods:["A1","B1","B2","C","E","D"], od1:"NYY1", od4:"NYY4"},
+  CV:{name:"CV 0.6/1 kV (XLPE)", ins:"XLPE", methods:["A1","B1","B2","C","E","D"], od1:"CV1", od4:"CV4"}
+};
+/* Inside diameters, mm */
+const CONDUITS = {
+  EMT:{name:"EMT (ท่อบาง)", s:[["1/2\"",15.8],["3/4\"",20.9],["1\"",26.6],["1-1/4\"",35.1],["1-1/2\"",40.9],["2\"",52.5],["2-1/2\"",69.4],["3\"",85.2],["3-1/2\"",97.4],["4\"",110.1]]},
+  IMC:{name:"IMC (ท่อหนาปานกลาง)", s:[["1/2\"",16.8],["3/4\"",21.9],["1\"",28.1],["1-1/4\"",36.8],["1-1/2\"",42.7],["2\"",54.6],["2-1/2\"",64.9],["3\"",80.7],["3-1/2\"",93.2],["4\"",105.4]]},
+  RSC:{name:"RSC (ท่อหนา)", s:[["1/2\"",16.1],["3/4\"",21.2],["1\"",27.0],["1-1/4\"",35.4],["1-1/2\"",41.2],["2\"",52.9],["2-1/2\"",63.2],["3\"",78.5],["3-1/2\"",90.7],["4\"",102.9],["5\"",128.9],["6\"",154.8]]}
+};
+const BREAKERS = [6,10,16,20,25,32,40,50,63,80,100,125,160,200,225,250,315,350,400,500,630,800,1000,1250,1600,2000,2500,3200,4000,5000,6300];
+const GROUND = [[16,1.5],[20,2.5],[40,4],[70,6],[100,10],[200,16],[400,25],[500,35],[800,50],[1000,70],[1250,95],[2000,120],[2500,185],[4000,240],[6000,400]];
+const WIREWAYS = [[50,50],[50,75],[50,100],[75,75],[75,100],[100,100],[100,150],[100,200],[150,150],[150,200],[150,300],[200,200],[200,300]];
+const TRAY_W = [100,150,200,300,400,450,500,600,750,900,1000];
+
+const fmt = (x,d=1) => (isFinite(x) ? Number(x).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d}) : "–");
+const num = (id, def=0) => { const v = parseFloat($(id).value); return isFinite(v) ? v : def; };
+const radio = name => document.querySelector(`input[name="${name}"]:checked`).value;
+const opt = (v,t,sel) => `<option value="${v}"${sel?" selected":""}>${t}</option>`;
+const chip = (ok,t1="ผ่าน",t2="ไม่ผ่าน") => `<span class="chip ${ok?"ok":"bad"}">${ok?t1:t2}</span>`;
+
+function tempFactor(tc, ta, base){ if (ta >= tc) return 0; return Math.sqrt((tc-ta)/(tc-base)); }
+function groupFactor(kind, n){
+  n = Math.max(1, Math.round(n));
+  const a = GROUP[kind];
+  if (n <= a.length) return a[n-1];
+  if (kind === "bunch") return n <= 12 ? .45 : n <= 16 ? .41 : .38;
+  return a[a.length-1];
+}
+function current(unit, val, ph, V, pf){
+  const k = ph === 3 ? Math.sqrt(3) : 1;
+  if (unit === "A") return val;
+  if (unit === "kVA") return val*1000/(k*V);
+  return val*1000/(k*V*pf);
+}
+function vdrop(ph, V, I, L, i, pf, np, tc){
+  const R = R20[i]*(1+0.00393*(tc-20)), X = XL[i], sin = Math.sqrt(Math.max(0,1-pf*pf));
+  const k = ph === 3 ? Math.sqrt(3) : 2;
+  const perM = k*(R*pf + X*sin)/1000/np;      // V per (A·m)
+  const dv = perM*I*L;
+  return {dv, pct: dv/V*100, perM};
+}
+function groundFor(In){ const r = GROUND.find(g => In <= g[0]); return r ? r[1] : 400; }
+function fillLimit(n){ return n === 1 ? 53 : n === 2 ? 31 : 40; }
+function pickConduit(type, area, n){
+  const lim = fillLimit(n);
+  return CONDUITS[type].s.map(([name,id]) => {
+    const a = Math.PI*id*id/4; const pct = area/a*100;
+    return {name, id, a, pct, ok: pct <= lim};
+  });
+}
+const cArea = d => Math.PI*d*d/4;
+
+/* ---------- Tabs ---------- */
+const TABS = ["sizing","vd","conduit","raceway","tables"];
+function show(t){
+  if (!TABS.includes(t)) t = "sizing";
+  TABS.forEach(k => { $("p-"+k).hidden = k !== t; $("tab-"+k).setAttribute("aria-selected", k === t); });
+  try { history.replaceState(null, "", "#"+t); } catch(e){}
+}
+document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("click", () => show(b.dataset.tab)));
+
+/* ---------- Cable list editor (conduit & raceway) ---------- */
+const lists = {};
+function makeList(id, rows, onChange){
+  const el = $(id); lists[id] = {rows, onChange, seq: rows.length};
+  rows.forEach((r,i) => r.k = i);
+  const render = () => {
+    el.innerHTML = lists[id].rows.map(r => {
+      const sizes = SZ.map(s => opt(s, s+" mm²", s === r.size)).join("");
+      const types = Object.keys(OD).map(k => opt(k, OD[k].name, k === r.type)).join("");
+      const cust = r.type === "CUSTOM";
+      return `<div class="cl-row" data-k="${r.k}">
+        <div class="field"><label for="${id}-t${r.k}">ชนิดสาย</label><select id="${id}-t${r.k}" data-f="type">${types}</select></div>
+        <div class="field"><label for="${id}-s${r.k}">ขนาด</label><select id="${id}-s${r.k}" data-f="size"${cust?" disabled":""}>${sizes}</select></div>
+        <div class="field"><label for="${id}-q${r.k}">จำนวน</label><input type="number" id="${id}-q${r.k}" data-f="qty" value="${r.qty}" min="0" step="1"></div>
+        <button type="button" class="btn icon" data-del="${r.k}" aria-label="ลบรายการ">✕</button>
+        ${cust?`<div class="field od"><label for="${id}-d${r.k}">เส้นผ่านศูนย์กลางภายนอก (mm)</label><input type="number" id="${id}-d${r.k}" data-f="od" value="${r.od||10}" min="0.1" step="0.1"></div>`:""}
+      </div>`;
+    }).join("");
+  };
+  el.addEventListener("input", e => {
+    const row = e.target.closest(".cl-row"); if (!row) return;
+    const r = lists[id].rows.find(x => x.k == row.dataset.k); const f = e.target.dataset.f;
+    if (f === "type"){ r.type = e.target.value; render(); }
+    else if (f === "size") r.size = parseFloat(e.target.value);
+    else if (f === "qty") r.qty = Math.max(0, parseInt(e.target.value)||0);
+    else if (f === "od") r.od = parseFloat(e.target.value)||0;
+    onChange();
+  });
+  el.addEventListener("click", e => {
+    const k = e.target.dataset.del; if (k === undefined) return;
+    lists[id].rows = lists[id].rows.filter(x => x.k != k); render(); onChange();
+  });
+  document.querySelector(`[data-add="${id}"]`).addEventListener("click", () => {
+    lists[id].rows.push({k: lists[id].seq++, type:"THW", size:16, qty:1}); render(); onChange();
+  });
+  render();
+}
+function listItems(id){
+  return lists[id].rows.filter(r => r.qty > 0).map(r => {
+    const d = r.type === "CUSTOM" ? r.od : OD[r.type].d[SZ.indexOf(r.size)];
+    const label = r.type === "CUSTOM" ? `กำหนดเอง Ø${fmt(r.od,1)} mm` : `${OD[r.type].name} ${r.size} mm²`;
+    return {label, d, qty:r.qty, size: r.type === "CUSTOM" ? null : r.size};
+  }).filter(x => x.d > 0);
+}
+
+/* ---------- 1. Circuit sizing ---------- */
+function initSizing(){
+  $("sz-cb").innerHTML = opt("auto","อัตโนมัติ (ตามกระแสออกแบบ)",true) + BREAKERS.map(b => opt(b, b+" AT")).join("");
+  $("sz-cable").innerHTML = Object.keys(CABLES).map(k => opt(k, CABLES[k].name, k === "CV")).join("");
+  $("sz-cond").innerHTML = Object.keys(CONDUITS).map(k => opt(k, CONDUITS[k].name)).join("");
+  const fillMethods = () => {
+    const c = CABLES[$("sz-cable").value], cur = $("sz-method").value;
+    $("sz-method").innerHTML = c.methods.map(m => opt(m, METHODS[m].th, m === (c.methods.includes(cur) ? cur : "B1"))).join("");
+  };
+  $("sz-cable").addEventListener("change", fillMethods);
+  fillMethods();
+  $("p-sizing").addEventListener("input", calcSizing);
+  $("p-sizing").addEventListener("change", calcSizing);
+}
+function calcSizing(){
+  const ph = +radio("sz-ph"), V = ph === 3 ? 400 : 230;
+  const pf = Math.min(1, Math.max(.1, num("sz-pf", .85)));
+  const Ib = current($("sz-unit").value, num("sz-load"), ph, V, pf);
+  const cont = $("sz-cont").checked, Ides = cont ? Ib*1.25 : Ib;
+  const cbSel = $("sz-cb").value;
+  const In = cbSel === "auto" ? BREAKERS.find(b => b >= Ides) : +cbSel;
+  const L = num("sz-len"), np = Math.max(1, Math.round(num("sz-par",1)));
+  const cab = CABLES[$("sz-cable").value], m = $("sz-method").value, M = METHODS[m];
+  const tc = cab.ins === "PVC" ? 70 : 90, ta = num("sz-ta", 40);
+  const kt = tempFactor(tc, ta, M.base), kg = groupFactor(M.grp, num("sz-grp",1));
+  const tbl = AMP[cab.ins][ph === 3 ? 3 : 2][m];
+  const lim = num("sz-vdl", 3);
+  const out = $("r-sz");
+
+  if (!(Ib > 0)) { out.innerHTML = `<div class="panel"><div class="notice warn">ใส่ค่าโหลดมากกว่า 0 เพื่อเริ่มคำนวณ</div></div>`; return; }
+  if (!In) { out.innerHTML = `<div class="panel"><div class="notice bad">กระแสออกแบบ ${fmt(Ides,1)} A เกินพิกัดเบรกเกอร์สูงสุดในรายการ (6300 A)</div></div>`; return; }
+
+  const rows = SZ.map((s,i) => {
+    const Iz = tbl[i]*kt*kg*np;
+    const v = vdrop(ph, V, Ib, L, i, pf, np, tc);
+    return {s, i, It: tbl[i], Iz, okA: Iz >= In, vd: v, okV: v.pct <= lim};
+  });
+  const byA = rows.find(r => r.okA), byV = rows.find(r => r.okV);
+  const pick = rows.find(r => r.okA && r.okV);
+  let html = "";
+
+  if (!pick){
+    html += `<div class="panel"><div class="notice bad">ไม่มีขนาดสายในตาราง (ถึง 300 mm²) ที่ผ่านทั้งพิกัดกระแสและแรงดันตก ลองเพิ่มจำนวนสายขนานต่อเฟส หรือลดความยาว/กลุ่มวงจร</div></div>`;
+  } else {
+    let g = groundFor(In); if (g > pick.s) g = pick.s;
+    const nPh = ph === 3 ? 3 : 1;
+    let cdHtml = `<div class="k">ท่อร้อยสาย</div><div class="v">–</div><div class="sub">วิธีติดตั้งนี้ไม่ใช้ท่อ</div>`;
+    let cdDetail = "";
+    if (M.conduit){
+      const items = [];
+      const gi = SZ.indexOf(g), gd = gi >= 0 ? OD.THW.d[gi] : null;
+      if (M.conduit === "single"){
+        items.push({n: nPh+1, d: OD[cab.od1].d[pick.i], t:`${OD[cab.od1].name} ${pick.s} mm² (เฟส + นิวทรัล)`});
+      } else {
+        items.push({n: 1, d: OD[cab.od4].d[pick.i], t:`${OD[cab.od4].name} ${pick.s} mm²`});
+      }
+      if (gd) items.push({n:1, d: gd, t:`THW ${g} mm² (สายดิน)`});
+      const area = items.reduce((a,x) => a + x.n*cArea(x.d), 0), cnt = items.reduce((a,x) => a + x.n, 0);
+      const cds = pickConduit($("sz-cond").value, area, cnt), c = cds.find(x => x.ok);
+      cdHtml = `<div class="k">ท่อร้อยสาย ${$("sz-cond").value}${np>1?` (${np} ท่อ)`:""}</div><div class="v">${c ? c.name : "เกิน"}</div><div class="sub">${c ? `fill ${fmt(c.pct,1)} % ≤ ${fillLimit(cnt)} %` : "ใหญ่เกินท่อในรายการ"}</div>`;
+      cdDetail = `<p class="hint" style="margin:10px 0 0">ต่อ 1 ท่อ: ${items.map(x => `${x.n} × ${x.t}`).join(" + ")} · พื้นที่สายรวม ${fmt(area,0)} mm²</p>`;
+    }
+    const desc = np > 1 ? `${np} × ${pick.s}` : `${pick.s}`;
+    html += `<div class="answer">
+      <div class="main"><div class="k">สายเฟส ${$("sz-cable").value}</div><div class="v">${desc} <small>mm²</small></div><div class="sub">${np>1?"ขนานต่อเฟส · ":""}I<sub>z</sub> ${fmt(pick.Iz,0)} A</div></div>
+      <div><div class="k">เบรกเกอร์</div><div class="v">${In} <small>AT</small></div><div class="sub">${ph === 3 ? "3P" : "1P/2P"} · I<sub>des</sub> ${fmt(Ides,1)} A</div></div>
+      <div><div class="k">สายนิวทรัล</div><div class="v">${desc} <small>mm²</small></div><div class="sub">เท่าสายเฟส</div></div>
+      <div><div class="k">สายดิน (ต่อชุด)</div><div class="v">${g} <small>mm²</small></div><div class="sub">ตามพิกัด ${In} A</div></div>
+      <div><div class="k">แรงดันตก</div><div class="v">${fmt(pick.vd.pct,2)} <small>%</small></div><div class="sub">${fmt(pick.vd.dv,1)} V · จำกัด ${fmt(lim,1)} %</div></div>
+      <div>${cdHtml}</div>
+    </div>${cdDetail}`;
+    const gov = byA && byV ? (byV.s > byA.s ? `ขนาดสายถูกกำหนดโดย<b>แรงดันตก</b> (พิกัดกระแสต้องการเพียง ${byA.s} mm²)` : `ขนาดสายถูกกำหนดโดย<b>พิกัดกระแส</b>`) : "";
+    html = `<div class="panel">${html}<p class="hint" style="margin:10px 0 0">${gov}</p></div>`;
+  }
+
+  html += `<div class="panel"><h2>รายละเอียดการคำนวณ</h2><dl class="kv">
+    <dt>กระแสโหลด I<sub>B</sub></dt><dd>${fmt(Ib,2)} A</dd>
+    <dt>กระแสออกแบบ ${cont?"(× 1.25)":""}</dt><dd>${fmt(Ides,2)} A</dd>
+    <dt>พิกัดเบรกเกอร์ I<sub>n</sub></dt><dd>${In} A${In < Ides ? ' <span class="chip bad">ต่ำกว่ากระแสออกแบบ</span>' : ""}</dd>
+    <dt>ตัวคูณอุณหภูมิ C<sub>a</sub> (${ta} °C, ฐาน ${M.base} °C)</dt><dd>${fmt(kt,3)}</dd>
+    <dt>ตัวคูณกลุ่มวงจร C<sub>g</sub></dt><dd>${fmt(kg,2)}</dd>
+    <dt>เงื่อนไขพิกัดกระแส</dt><dd>I<sub>t</sub> × C<sub>a</sub> × C<sub>g</sub> × ${np} ≥ ${In} A</dd>
+  </dl>${kt === 0 ? '<div class="notice bad" style="margin-top:10px">อุณหภูมิโดยรอบสูงกว่าอุณหภูมิใช้งานของฉนวน</div>' : ""}</div>`;
+
+  html += `<div class="panel"><h2>เปรียบเทียบทุกขนาด</h2><div class="tbl"><table>
+    <thead><tr><th>ขนาด (mm²)</th><th>I<sub>t</sub> ตาราง</th><th>I<sub>z</sub> หลังปรับ</th><th>พิกัดกระแส</th><th>ΔV (%)</th><th>แรงดันตก</th></tr></thead><tbody>
+    ${rows.map(r => `<tr${pick && r.s === pick.s ? ' class="pick"' : ""}><td>${np>1?np+" × ":""}${r.s}</td><td>${fmt(r.It,1)}</td><td>${fmt(r.Iz,1)}</td><td>${chip(r.okA)}</td><td>${fmt(r.vd.pct,2)}</td><td>${chip(r.okV)}</td></tr>`).join("")}
+    </tbody></table></div></div>`;
+  out.innerHTML = html;
+}
+
+/* ---------- 2. Voltage drop ---------- */
+function initVD(){
+  $("vd-size").innerHTML = SZ.map(s => opt(s, s, s === 35)).join("");
+  document.querySelectorAll('input[name="vd-ph"]').forEach(r => r.addEventListener("change", () => { $("vd-v").value = radio("vd-ph") === "3" ? 400 : 230; }));
+  $("p-vd").addEventListener("input", calcVD);
+  $("p-vd").addEventListener("change", calcVD);
+}
+function calcVD(){
+  const ph = +radio("vd-ph"), V = num("vd-v", 400), pf = Math.min(1, Math.max(.1, num("vd-pf",.85)));
+  const I = current($("vd-unit").value, num("vd-load"), ph, V, pf);
+  const L = num("vd-len"), s = parseFloat($("vd-size").value), i = SZ.indexOf(s);
+  const tc = $("vd-ins").value === "PVC" ? 70 : 90, np = Math.max(1, Math.round(num("vd-par",1))), lim = num("vd-lim",3);
+  const r = vdrop(ph, V, I, L, i, pf, np, tc);
+  const Lmax = I > 0 ? (lim/100*V)/(r.perM*I) : Infinity;
+  const ok = r.pct <= lim;
+  const all = SZ.map((z,j) => ({z, v: vdrop(ph, V, I, L, j, pf, np, tc)}));
+  const minOk = all.find(x => x.v.pct <= lim);
+  $("r-vd").innerHTML = `
+    <div class="panel"><div class="answer">
+      <div class="main"><div class="k">แรงดันตก</div><div class="v">${fmt(r.pct,2)} <small>%</small></div><div class="sub">${chip(ok,"ไม่เกิน "+fmt(lim,1)+" %","เกิน "+fmt(lim,1)+" %")}</div></div>
+      <div><div class="k">ΔV</div><div class="v">${fmt(r.dv,2)} <small>V</small></div><div class="sub">ปลายสาย ${fmt(V-r.dv,1)} V</div></div>
+      <div><div class="k">กระแส</div><div class="v">${fmt(I,1)} <small>A</small></div><div class="sub">${np>1?`${fmt(I/np,1)} A ต่อเส้น`:"ต่อเฟส"}</div></div>
+      <div><div class="k">ความยาวสูงสุด</div><div class="v">${isFinite(Lmax)?fmt(Lmax,0):"–"} <small>m</small></div><div class="sub">ที่ ${s} mm², ΔV ${fmt(lim,1)} %</div></div>
+    </div>
+    <p class="hint" style="margin:10px 0 0">ขนาดเล็กที่สุดที่ผ่าน: <b>${minOk ? (np>1?np+" × ":"")+minOk.z+" mm²" : "เกิน 300 mm² — เพิ่มสายขนาน"}</b> · R<sub>${tc}°C</sub> = ${fmt(R20[i]*(1+0.00393*(tc-20)),4)} Ω/km, X = ${fmt(XL[i],3)} Ω/km</p></div>
+    <div class="panel"><h2>แรงดันตกตามขนาดสาย</h2><div class="tbl"><table>
+      <thead><tr><th>ขนาด (mm²)</th><th>R (Ω/km)</th><th>X (Ω/km)</th><th>ΔV (V)</th><th>ΔV (%)</th><th>L สูงสุด (m)</th><th></th></tr></thead><tbody>
+      ${all.map((x,j) => { const R = R20[j]*(1+0.00393*(tc-20)); const lm = I>0 ? (lim/100*V)/(x.v.perM*I) : Infinity;
+        return `<tr${x.z === s ? ' class="pick"' : ""}><td>${x.z}</td><td>${fmt(R,4)}</td><td>${fmt(XL[j],3)}</td><td>${fmt(x.v.dv,2)}</td><td>${fmt(x.v.pct,2)}</td><td>${isFinite(lm)?fmt(lm,0):"–"}</td><td>${chip(x.v.pct <= lim)}</td></tr>`; }).join("")}
+      </tbody></table></div></div>`;
+}
+
+/* ---------- 3. Conduit fill ---------- */
+function initConduit(){
+  $("cd-type").innerHTML = Object.keys(CONDUITS).map(k => opt(k, CONDUITS[k].name)).join("");
+  $("cd-type").addEventListener("change", calcConduit);
+  makeList("cl-conduit", [{type:"THW", size:35, qty:4},{type:"THW", size:10, qty:1}], calcConduit);
+}
+function calcConduit(){
+  const items = listItems("cl-conduit");
+  const n = items.reduce((a,x) => a + x.qty, 0), area = items.reduce((a,x) => a + x.qty*cArea(x.d), 0);
+  const type = $("cd-type").value, lim = fillLimit(n);
+  const out = $("r-cd");
+  if (!n){ out.innerHTML = `<div class="panel"><div class="notice warn">เพิ่มสายอย่างน้อย 1 เส้น</div></div>`; return; }
+  const cds = pickConduit(type, area, n), c = cds.find(x => x.ok);
+  out.innerHTML = `
+    <div class="panel"><div class="answer">
+      <div class="main"><div class="k">ขนาดท่อ ${type}</div><div class="v">${c ? c.name : "เกิน"}</div><div class="sub">${c ? `ID ${fmt(c.id,1)} mm` : "ไม่มีท่อในรายการที่รองรับ แบ่งเป็นหลายท่อ"}</div></div>
+      <div><div class="k">จำนวนสาย</div><div class="v">${n} <small>เส้น</small></div><div class="sub">เกณฑ์ ${lim} %</div></div>
+      <div><div class="k">พื้นที่สายรวม</div><div class="v">${fmt(area,0)} <small>mm²</small></div><div class="sub">ต้องการท่อ ≥ ${fmt(area/(lim/100),0)} mm²</div></div>
+    </div>
+    ${c ? `<div style="margin-top:14px"><div class="meter" role="img" aria-label="fill ${fmt(c.pct,1)} percent"><i style="width:${Math.min(100,c.pct)}%"></i><b style="left:${lim}%"></b></div>
+      <div class="meter-lbl"><span>fill ${fmt(c.pct,1)} %</span><span>เกณฑ์ ${lim} %</span><span>100 %</span></div></div>` : ""}
+    <p class="hint" style="margin:10px 0 0">${items.map(x => `${x.qty} × ${x.label} (Ø${fmt(x.d,1)})`).join(" · ")}</p></div>
+    <div class="panel"><h2>ทุกขนาดท่อ ${CONDUITS[type].name}</h2><div class="tbl"><table>
+      <thead><tr><th>ขนาด</th><th>ID (mm)</th><th>พื้นที่ (mm²)</th><th>ใช้ได้ ${lim} % (mm²)</th><th>Fill (%)</th><th></th></tr></thead><tbody>
+      ${cds.map(x => `<tr${c && x.name === c.name ? ' class="pick"' : ""}><td>${x.name}</td><td>${fmt(x.id,1)}</td><td>${fmt(x.a,0)}</td><td>${fmt(x.a*lim/100,0)}</td><td>${fmt(x.pct,1)}</td><td>${chip(x.ok)}</td></tr>`).join("")}
+      </tbody></table></div></div>`;
+}
+
+/* ---------- 4. Wireway / cable tray ---------- */
+function initRaceway(){
+  makeList("cl-raceway", [{type:"CV4", size:50, qty:6},{type:"CV4", size:16, qty:10},{type:"CV1", size:185, qty:8}], calcRaceway);
+  $("p-raceway").addEventListener("input", e => { if (!e.target.closest(".cl")) calcRaceway(); });
+  $("p-raceway").addEventListener("change", e => { if (!e.target.closest(".cl")) calcRaceway(); });
+}
+function calcRaceway(){
+  const kind = radio("rw-kind"); $("rw-tray-opts").hidden = kind !== "tray";
+  const items = listItems("cl-raceway"), spare = 1 + num("rw-spare",0)/100;
+  const out = $("r-rw");
+  const n = items.reduce((a,x) => a + x.qty, 0);
+  if (!n){ out.innerHTML = `<div class="panel"><div class="notice warn">เพิ่มสายอย่างน้อย 1 เส้น</div></div>`; return; }
+  if (kind === "wireway"){
+    const area = items.reduce((a,x) => a + x.qty*cArea(x.d), 0)*spare;
+    const rows = WIREWAYS.map(([w,h]) => ({w,h,a:w*h,pct:area/(w*h)*100})).map(r => ({...r, ok: r.pct <= 20}));
+    const c = rows.find(r => r.ok);
+    out.innerHTML = `
+      <div class="panel"><div class="answer">
+        <div class="main"><div class="k">ขนาด Wireway (ก × ส)</div><div class="v">${c ? `${c.w}×${c.h}` : "เกิน"} <small>mm</small></div><div class="sub">${c ? `fill ${fmt(c.pct,1)} % ≤ 20 %` : "ใช้หลายรางหรือรางเคเบิล"}</div></div>
+        <div><div class="k">พื้นที่สายรวม${spare>1?" + เผื่อ":""}</div><div class="v">${fmt(area,0)} <small>mm²</small></div><div class="sub">ต้องการราง ≥ ${fmt(area/0.2,0)} mm²</div></div>
+        <div><div class="k">จำนวนสาย</div><div class="v">${n} <small>เส้น</small></div><div class="sub">${n > 30 ? '<span class="chip warn">เกิน 30 เส้นมีกระแส ต้องลดพิกัด</span>' : "ไม่เกิน 30 เส้น"}</div></div>
+      </div></div>
+      <div class="panel"><h2>ขนาด Wireway มาตรฐาน</h2><div class="tbl"><table>
+        <thead><tr><th>ก × ส (mm)</th><th>พื้นที่ (mm²)</th><th>ใช้ได้ 20 % (mm²)</th><th>Fill (%)</th><th></th></tr></thead><tbody>
+        ${rows.map(r => `<tr${c && r === c ? ' class="pick"' : ""}><td>${r.w} × ${r.h}</td><td>${fmt(r.a,0)}</td><td>${fmt(r.a*.2,0)}</td><td>${fmt(r.pct,1)}</td><td>${chip(r.ok)}</td></tr>`).join("")}
+        </tbody></table></div></div>`;
+  } else {
+    const depth = +$("rw-depth").value, fp = num("rw-fill",40)/100;
+    const small = items.filter(x => x.size === null ? x.d < 21 : x.size < 120);
+    const large = items.filter(x => !small.includes(x));
+    const aSmall = small.reduce((a,x) => a + x.qty*cArea(x.d), 0)*spare;
+    const wLarge = large.reduce((a,x) => a + x.qty*x.d, 0)*spare;
+    const wSmall = aSmall/(depth*fp);
+    const need = wSmall + wLarge;
+    const w = TRAY_W.find(x => x >= need);
+    const rows = TRAY_W.map(x => ({x, pct: need/x*100, ok: x >= need}));
+    out.innerHTML = `
+      <div class="panel"><div class="answer">
+        <div class="main"><div class="k">ความกว้างรางเคเบิล</div><div class="v">${w ? w : "เกิน"} <small>mm</small></div><div class="sub">${w ? `ลึก ${depth} mm · ใช้ ${fmt(need/w*100,0)} % ของความกว้าง` : "ใช้หลายรางหรือรางซ้อนชั้น"}</div></div>
+        <div><div class="k">ความกว้างที่ต้องการ</div><div class="v">${fmt(need,0)} <small>mm</small></div><div class="sub">${spare>1?`รวมเผื่อ ${fmt((spare-1)*100,0)} %`:"ไม่รวมเผื่อ"}</div></div>
+        <div><div class="k">จำนวนสาย</div><div class="v">${n} <small>เส้น</small></div><div class="sub">${small.length} รายการคิดพื้นที่ · ${large.length} รายการชั้นเดียว</div></div>
+      </div>
+      <dl class="kv" style="margin-top:14px">
+        <dt>สาย &lt; 120 mm²: พื้นที่รวม ÷ (ลึก ${depth} × ${fmt(fp*100,0)} %)</dt><dd>${fmt(aSmall,0)} mm² → ${fmt(wSmall,0)} mm</dd>
+        <dt>สาย ≥ 120 mm²: ผลรวม OD วางชั้นเดียว</dt><dd>${fmt(wLarge,0)} mm</dd>
+      </dl></div>
+      <div class="panel"><h2>ความกว้างรางมาตรฐาน</h2><div class="tbl"><table>
+        <thead><tr><th>กว้าง (mm)</th><th>ลึก (mm)</th><th>ใช้ความกว้าง (%)</th><th></th></tr></thead><tbody>
+        ${rows.map(r => `<tr${r.x === w ? ' class="pick"' : ""}><td>${r.x}</td><td>${depth}</td><td>${fmt(r.pct,0)}</td><td>${chip(r.ok)}</td></tr>`).join("")}
+        </tbody></table></div>
+        <p class="hint">ตัวคูณลดพิกัดกระแสของสายบนรางให้ตรวจในแท็บ "ออกแบบวงจร" ด้วยวิธีติดตั้ง E และจำนวนวงจรรวมกัน</p></div>`;
+  }
+}
+
+/* ---------- 5. Reference tables ---------- */
+function initTables(){ ["tb-ins","tb-ld","tb-ta"].forEach(id => $(id).addEventListener("input", calcTables));
+  $("t-gnd").innerHTML = `<table><thead><tr><th>พิกัดเครื่องป้องกันไม่เกิน (A)</th><th>สายดินทองแดง (mm²)</th></tr></thead><tbody>${GROUND.map(g => `<tr><td>${g[0]}</td><td>${g[1]}</td></tr>`).join("")}</tbody></table>`;
+  const ks = Object.keys(CONDUITS), maxN = Math.max(...ks.map(k => CONDUITS[k].s.length));
+  let h = `<table><thead><tr><th>ขนาด</th>${ks.map(k => `<th>${k}</th>`).join("")}</tr></thead><tbody>`;
+  for (let i = 0; i < maxN; i++){
+    const name = (CONDUITS.RSC.s[i]||[])[0];
+    h += `<tr><td>${name}</td>${ks.map(k => `<td>${CONDUITS[k].s[i] ? fmt(CONDUITS[k].s[i][1],1) : '<span class="dim">–</span>'}</td>`).join("")}</tr>`;
+  }
+  $("t-cd").innerHTML = h + "</tbody></table>";
+}
+function calcTables(){
+  const ins = $("tb-ins").value, ld = $("tb-ld").value, ta = num("tb-ta",40), tc = ins === "PVC" ? 70 : 90;
+  const ms = Object.keys(METHODS);
+  const k = m => tempFactor(tc, ta, METHODS[m].base);
+  $("t-amp").innerHTML = `<table><thead><tr><th>mm²</th>${ms.map(m => `<th title="${METHODS[m].th}">${m}</th>`).join("")}</tr></thead><tbody>
+    ${SZ.map((s,i) => `<tr><td>${s}</td>${ms.map(m => `<td>${fmt(AMP[ins][ld][m][i]*k(m),0)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  $("t-amp-note").innerHTML = ms.map(m => `<b>${m}</b> ${METHODS[m].th.split("·")[1]} (C<sub>a</sub> ${fmt(k(m),3)})`).join(" · ") +
+    (ta !== 20 ? ` · วิธี D ใช้ค่า ${ta} °C เป็นอุณหภูมิดิน` : "");
+}
+
+initSizing(); initVD(); initConduit(); initRaceway(); initTables();
+calcSizing(); calcVD(); calcConduit(); calcRaceway(); calcTables();
+show((location.hash || "").slice(1));
+})();
+</script>

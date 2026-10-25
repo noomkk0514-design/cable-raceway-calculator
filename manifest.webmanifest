@@ -1,0 +1,25 @@
+{
+  "name": "Cable & Raceway Calculator",
+  "short_name": "Cable Calc",
+  "description": "เลือกขนาดสายไฟ เบรกเกอร์ สายดิน แรงดันตก ท่อร้อยสาย Wireway และรางเคเบิล",
+  "lang": "th",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#18232D",
+  "theme_color": "#18232D",
+  "categories": ["utilities", "productivity"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "ออกแบบวงจร", "url": "./#sizing" },
+    { "name": "แรงดันตก", "url": "./#vd" },
+    { "name": "ท่อร้อยสาย", "url": "./#conduit" },
+    { "name": "รางเดินสาย / รางเคเบิล", "url": "./#raceway" }
+  ]
+}
